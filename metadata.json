@@ -1,0 +1,6 @@
+{
+  "name": "Reportli AI",
+  "description": "An AI-powered SaaS for automated client report generation from multi-platform data, with customizable dashboards and visualization tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
