@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: 'An AI-powered SaaS for automated client report generation from multi-platform data, with customizable dashboards and visualization tools.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({children}: {children: React.ReactNode}) {
   let user = null;
   try {

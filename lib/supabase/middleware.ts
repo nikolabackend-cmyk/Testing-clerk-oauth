@@ -40,9 +40,27 @@ export async function updateSession(request: NextRequest) {
       }
     );
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Get user while being aware of potential session cookie naming
+    let { data: { user } } = await supabase.auth.getUser();
+
+    // Fallback manual check for session cookie if user is null (common when using Service Role Key)
+    if (!user) {
+      const allCookies = request.cookies.getAll();
+      const authCookie = allCookies.find(c => c.name.includes('auth-token'));
+      if (authCookie) {
+        try {
+          const cookieData = JSON.parse(authCookie.value);
+          const token = cookieData.access_token || cookieData[0];
+          if (token) {
+            const { data } = await supabase.auth.getUser(token);
+            user = data.user;
+          }
+        } catch {
+          const { data } = await supabase.auth.getUser(authCookie.value);
+          user = data.user;
+        }
+      }
+    }
 
     // Protect private routes
     const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard') || 
@@ -54,6 +72,14 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/sign-in';
       return NextResponse.redirect(url);
     }
+    
+    // Redirect signed-in users away from auth pages
+    if (user && (request.nextUrl.pathname === '/sign-in')) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+
   } catch (error) {
     console.error('Middleware Supabase error:', error);
   }

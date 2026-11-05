@@ -21,6 +21,9 @@ import {
 } from 'lucide-react';
 import ErrorSimulator from '@/components/ErrorSimulator';
 import { triggerSimulatedError } from '@/lib/error-generator';
+import { signOut } from '@/app/auth/actions';
+
+export const dynamic = 'force-dynamic';
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
@@ -107,12 +110,20 @@ export default function HomePage() {
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-3">
             {isLoaded && !user ? (
-              <Link href="/api/auth/login">
+              <Link href="/sign-in">
                 <button className="px-6 py-3 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 border border-[#D4AF37] shadow-sm cursor-pointer">
                   <LogIn size={14} />
                   <span>Sign In to Access App</span>
                 </button>
               </Link>
+            ) : isLoaded && user ? (
+              <button 
+                onClick={() => signOut()}
+                className="px-6 py-3 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 border border-[#D4AF37] shadow-sm cursor-pointer"
+              >
+                <LogIn size={14} className="rotate-180" />
+                <span>Sign Out ({user.email?.split('@')[0]})</span>
+              </button>
             ) : null}
 
             <Link
