@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -15,12 +16,31 @@ import {
   Layers, 
   ShieldCheck,
   Zap,
-  Flame
+  Flame,
+  LogIn
 } from 'lucide-react';
 import ErrorSimulator from '@/components/ErrorSimulator';
 import { triggerSimulatedError } from '@/lib/error-generator';
 
 export default function HomePage() {
+  const [user, setUser] = useState<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    async function checkUser() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (err) {}
+      finally {
+        setIsLoaded(true);
+      }
+    }
+    checkUser();
+  }, []);
   const quickLinks = [
     {
       title: 'Client Dashboard',
@@ -81,13 +101,27 @@ export default function HomePage() {
 
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-3">
+            {isLoaded && !user ? (
+              <Link href="/api/auth/login">
+                <button className="px-6 py-3 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 border border-[#D4AF37] shadow-sm cursor-pointer">
+                  <LogIn size={14} />
+                  <span>Sign In to Access App</span>
+                </button>
+              </Link>
+            ) : null}
+
             <Link
               href="/dashboard"
-              className="px-6 py-3 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 border border-[#D4AF37] shadow-sm"
+              className={`px-6 py-3 text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 shadow-sm ${
+                isLoaded && user 
+                  ? 'bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black border border-[#D4AF37]' 
+                  : 'bg-white text-black hover:bg-gray-100 border border-gray-300'
+              }`}
             >
-              <span>Go to /dashboard</span>
+              <span>{isLoaded && user ? 'Go to /dashboard' : 'Open /dashboard'}</span>
               <ArrowRight size={14} />
             </Link>
+
             <button
               onClick={() => triggerSimulatedError()}
               className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white text-xs uppercase tracking-widest font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-sm"

@@ -20,30 +20,17 @@ import {
   ArrowUpCircle,
   HelpCircle
 } from 'lucide-react';
-import { 
-  useAuth,
-  SignInButton, 
-  UserButton 
-} from '@clerk/nextjs';
 import ErrorSimulator from './ErrorSimulator';
+import { signOut } from '@/app/auth/actions';
+import { type User } from '@supabase/supabase-js';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { userId, isLoaded } = useAuth();
+export default function DashboardLayout({ children, user }: { children: React.ReactNode, user: User | null }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const pathname = usePathname() || '/home';
   const router = useRouter();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const isAuthPage = pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up');
-
-  if (isAuthPage) {
-    return (
-      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4">
-        {children}
-      </div>
-    );
-  }
 
   const navLinks = [
     { label: 'Home', path: '/home', icon: Home },
@@ -115,29 +102,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="flex items-center gap-3">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <div className="hidden md:flex flex-col items-end">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Authenticated</span>
+                  <span className="text-xs font-medium text-gray-700">{user.email}</span>
+                </div>
+                <button
+                  onClick={() => signOut()}
+                  className="px-4 py-2 border border-black hover:bg-black hover:text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/sign-in"
+                className="px-4 py-2 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-[10px] font-bold uppercase tracking-widest transition-all border border-black"
+              >
+                Sign In
+              </Link>
+            )}
             <ErrorSimulator variant="header" />
-            <div className="flex items-center gap-2 border-l border-[#E0E0E0] pl-3">
-              {isLoaded && !userId && (
-                <SignInButton mode="modal">
-                  <button className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider border border-black hover:bg-black hover:text-[#D4AF37] transition-all cursor-pointer">
-                    Sign In
-                  </button>
-                </SignInButton>
-              )}
-              {isLoaded && userId && (
-                <UserButton 
-                  appearance={{
-                    elements: {
-                      userButtonAvatarBox: "rounded-none border border-black",
-                      userButtonTrigger: "rounded-none"
-                    }
-                  }}
-                />
-              )}
-              {!isLoaded && (
-                <div className="w-8 h-8 border border-black animate-pulse bg-gray-50" />
-              )}
-            </div>
           </div>
         </div>
 
