@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import Link from 'next/link';
@@ -17,33 +18,40 @@ import {
   ShieldCheck,
   Zap,
   Flame,
-  LogIn
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import ErrorSimulator from '@/components/ErrorSimulator';
 import { triggerSimulatedError } from '@/lib/error-generator';
 import { signOut } from '@/app/auth/actions';
+import { createClient } from '@/lib/supabase/client';
+import { type User } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
 export default function HomePage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const supabase = createClient();
 
   useEffect(() => {
-    async function checkUser() {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        }
-      } catch (err) {}
-      finally {
-        setIsLoaded(true);
-      }
-    }
-    checkUser();
-  }, []);
+    // 5. Use supabase.auth.getSession() to detect existing sessions
+    supabase.auth.getSession().then((res: any) => {
+      setUser(res?.data?.session?.user ?? null);
+      setIsLoaded(true);
+    });
+
+    // 6. Use supabase.auth.onAuthStateChange() to detect login and logout events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setUser(session?.user ?? null);
+      setIsLoaded(true);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
   const quickLinks = [
     {
       title: 'Client Dashboard',
@@ -81,6 +89,9 @@ export default function HomePage() {
     { id: 3, name: 'Aura Collective', channels: 'GA4 • Meta Ads', lastReport: '3 days ago', status: 'Ready' },
   ];
 
+  const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0];
+
   return (
     <div className="space-y-12">
       {/* Welcome Hero */}
@@ -95,9 +106,36 @@ export default function HomePage() {
               <span className="text-xs text-gray-500 font-mono">
                 reportli.js active &bull; key: rpl_live_ASy3hbZ0zJYjkrvwbrun8g2PQW
               </span>
+              {user && (
+                <span className="text-[10px] font-mono bg-black text-[#D4AF37] px-2 py-0.5">
+                  User ID: {user.id.slice(0, 8)}...
+                </span>
+              )}
             </div>
+
+            {user && (
+              <div className="flex items-center gap-3 pt-2">
+                {userAvatar ? (
+                  <img 
+                    src={userAvatar} 
+                    alt={userName || 'User'} 
+                    className="w-10 h-10 rounded-full object-cover border-2 border-[#D4AF37]"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-black text-[#D4AF37] flex items-center justify-center rounded-full text-sm font-bold">
+                    {userName?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Authenticated Profile</div>
+                  <div className="text-sm font-bold text-black">{user.email}</div>
+                </div>
+              </div>
+            )}
+
             <h1 className="text-4xl md:text-5xl font-serif">
-              {user ? `Welcome back, ${user.email?.split('@')[0]}` : 'Welcome to Reportli AI'}
+              {user ? `Welcome back, ${userName}` : 'Welcome to Reportli AI'}
             </h1>
             <p className="text-[#666666] text-sm max-w-2xl leading-relaxed">
               {user 
@@ -113,31 +151,26 @@ export default function HomePage() {
               <Link href="/sign-in">
                 <button className="px-6 py-3 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 border border-[#D4AF37] shadow-sm cursor-pointer">
                   <LogIn size={14} />
-                  <span>Sign In to Access App</span>
+                  <span>Sign In / Sign Up</span>
                 </button>
               </Link>
             ) : isLoaded && user ? (
-              <button 
+              <button
                 onClick={() => signOut()}
                 className="px-6 py-3 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 border border-[#D4AF37] shadow-sm cursor-pointer"
               >
-                <LogIn size={14} className="rotate-180" />
-                <span>Sign Out ({user.email?.split('@')[0]})</span>
+                <LogOut size={14} />
+                <span>Sign Out</span>
               </button>
             ) : null}
 
             <Link
               href="/dashboard"
-              className={`px-6 py-3 text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 shadow-sm ${
-                isLoaded && user 
-                  ? 'bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black border border-[#D4AF37]' 
-                  : 'bg-white text-black hover:bg-gray-100 border border-gray-300'
-              }`}
+              className="px-6 py-3 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-xs uppercase tracking-widest font-bold transition-colors flex items-center gap-2 border border-[#D4AF37] shadow-sm"
             >
-              <span>{isLoaded && user ? 'Go to /dashboard' : 'Open /dashboard'}</span>
+              <span>Go to /dashboard</span>
               <ArrowRight size={14} />
             </Link>
-
             <button
               onClick={() => triggerSimulatedError()}
               className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white text-xs uppercase tracking-widest font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-sm"

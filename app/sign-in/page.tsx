@@ -3,10 +3,35 @@
 import { signInWithGoogle } from '@/app/auth/actions';
 import { LogIn, Shield } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SignInPage() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    // 5. Use supabase.auth.getSession() to detect existing sessions
+    supabase.auth.getSession().then((res: any) => {
+      if (res?.data?.session?.user) {
+        // 10. Redirect authenticated users to /dashboard
+        router.push('/dashboard');
+      }
+    });
+
+    // 6. Use supabase.auth.onAuthStateChange() to detect login events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      if (session?.user) {
+        router.push('/dashboard');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase, router]);
 
   const handleSignIn = async () => {
     setLoading(true);
@@ -36,7 +61,7 @@ export default function SignInPage() {
             <button
               onClick={handleSignIn}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-all font-bold uppercase tracking-widest text-xs border border-black disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-all font-bold uppercase tracking-widest text-xs border border-black disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
             >
               {loading ? (
                 <div className="h-4 w-4 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />

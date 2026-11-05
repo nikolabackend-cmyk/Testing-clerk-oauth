@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
@@ -18,17 +19,47 @@ import {
   FileText,
   Settings,
   ArrowUpCircle,
-  HelpCircle
+  HelpCircle,
+  User as UserIcon,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import ErrorSimulator from './ErrorSimulator';
 import { signOut } from '@/app/auth/actions';
+import { createClient } from '@/lib/supabase/client';
 import { type User } from '@supabase/supabase-js';
 
-export default function DashboardLayout({ children, user }: { children: React.ReactNode, user: User | null }) {
+export default function DashboardLayout({ children, user: initialUser }: { children: React.ReactNode, user: User | null }) {
+  const [currentUser, setCurrentUser] = useState<User | null>(initialUser);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const pathname = usePathname() || '/home';
   const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    // 5. Use supabase.auth.getSession() to detect existing sessions
+    supabase.auth.getSession().then((res: any) => {
+      if (res?.data?.session?.user) {
+        setCurrentUser(res.data.session.user);
+      }
+    });
+
+    // 6. Use supabase.auth.onAuthStateChange() to detect login and logout events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+      setCurrentUser(session?.user ?? null);
+      if (event === 'SIGNED_IN') {
+        router.push('/dashboard');
+      } else if (event === 'SIGNED_OUT') {
+        router.push('/home');
+      }
+      router.refresh();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase, router]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -55,6 +86,9 @@ export default function DashboardLayout({ children, user }: { children: React.Re
       window.open(pathname, '_blank');
     }
   };
+
+  const userAvatar = currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture;
+  const userName = currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0];
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#000000] font-sans flex flex-col">
@@ -102,26 +136,46 @@ export default function DashboardLayout({ children, user }: { children: React.Re
           </nav>
 
           <div className="flex items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-4">
-                <div className="hidden md:flex flex-col items-end">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Authenticated</span>
-                  <span className="text-xs font-medium text-gray-700">{user.email}</span>
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 px-3 py-1.5">
+                  {userAvatar ? (
+                    <img 
+                      src={userAvatar} 
+                      alt={userName || 'User'} 
+                      className="w-7 h-7 rounded-full object-cover border border-[#D4AF37]"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 bg-black text-[#D4AF37] flex items-center justify-center rounded-full text-xs font-bold">
+                      {userName?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <div className="hidden md:flex flex-col text-left">
+                    <span className="text-xs font-bold text-black truncate max-w-[120px]">{userName}</span>
+                    <span className="text-[9px] font-mono text-gray-400 truncate max-w-[140px]" title={`ID: ${currentUser.id}`}>
+                      ID: {currentUser.id.slice(0, 8)}...
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => signOut()}
-                  className="px-4 py-2 border border-black hover:bg-black hover:text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer"
+                  className="px-3 py-2 border border-black hover:bg-black hover:text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Sign Out"
                 >
-                  Sign Out
+                  <LogOut size={13} />
+                  <span className="hidden sm:inline">Sign Out</span>
                 </button>
               </div>
             ) : (
-              <Link
-                href="/sign-in"
-                className="px-4 py-2 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-[10px] font-bold uppercase tracking-widest transition-all border border-black"
-              >
-                Sign In
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/sign-in"
+                  className="px-4 py-2 bg-black text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black text-[10px] font-bold uppercase tracking-widest transition-all border border-black"
+                >
+                  Sign In
+                </Link>
+              </div>
             )}
             <ErrorSimulator variant="header" />
           </div>
