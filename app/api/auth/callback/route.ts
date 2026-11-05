@@ -1,6 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,20 +9,10 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/dashboard';
 
   if (code) {
-    const { data, error } = await supabaseAdmin.auth.exchangeCodeForSession(code);
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error && data.session) {
-      const cookieStore = await cookies();
-      
-      // Set the session token in an HttpOnly cookie
-      cookieStore.set('sb-access-token', data.session.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: data.session.expires_in,
-        path: '/',
-      });
-
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

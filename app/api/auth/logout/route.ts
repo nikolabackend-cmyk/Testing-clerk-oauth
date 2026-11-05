@@ -1,13 +1,12 @@
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const { origin } = new URL(request.url);
-  const cookieStore = await cookies();
-  
-  cookieStore.delete('sb-access-token');
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   
   return NextResponse.redirect(`${origin}/home`);
 }

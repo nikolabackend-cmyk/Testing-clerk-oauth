@@ -93,9 +93,14 @@ export default function HomePage() {
                 reportli.js active &bull; key: rpl_live_ASy3hbZ0zJYjkrvwbrun8g2PQW
               </span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-serif">Welcome to Reportli AI</h1>
+            <h1 className="text-4xl md:text-5xl font-serif">
+              {user ? `Welcome back, ${user.email?.split('@')[0]}` : 'Welcome to Reportli AI'}
+            </h1>
             <p className="text-[#666666] text-sm max-w-2xl leading-relaxed">
-              Automated multi-platform client reporting SaaS. Connect Shopify, Google Analytics 4, and Meta Ads to deliver automated executive intelligence.
+              {user 
+                ? 'Your automated multi-platform client reporting workspace is ready. Access your synchronized dashboards and multi-channel metrics below.'
+                : 'Automated multi-platform client reporting SaaS. Connect Shopify, Google Analytics 4, and Meta Ads to deliver automated executive intelligence.'
+              }
             </p>
           </div>
 
