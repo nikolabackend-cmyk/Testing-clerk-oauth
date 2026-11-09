@@ -26,7 +26,7 @@ export default async function RootLayout({children}: {children: React.ReactNode}
       <head>
         <Script
           src="https://reportliai-sbs.reportliaihq.workers.dev/reportli.js"
-          {...({ api_key: 'rpl_live_ASy3hbZ0zJYjkrvwbrun8g2PQW' } as Record<string, string>)}
+          {...({ api_key: 'rep_live_nBvbbSwngd0tqMilphFhe0000000' } as Record<string, string>)}
           async
           strategy="afterInteractive"
         />
